@@ -1,0 +1,19 @@
+{
+  "version": "qlora_target_probe_v1",
+  "source_index": 3698,
+  "sequence_length": 3761,
+  "supervised_tokens": 135,
+  "batch_size": 1,
+  "max_updates": 2,
+  "seed": 42,
+  "minimum_free_mib": 6144,
+  "process_timeout_seconds": 300,
+  "estimated_allocated_gib": [2.5, 4.5],
+  "estimated_process_minutes": [1, 3],
+  "source_config": "configs/qlora_smoke.json",
+  "source_features": "data/processed/spider_long_probe_v2/features.json",
+  "cpu_equivalence_report": "reports/target_loss_cpu_equivalence.json",
+  "run_dir": "outputs/runs/qlora_target_probe_v1",
+  "preflight": "reports/qlora_target_probe_preflight.json",
+  "scope": "Full context preserved, target-position logits/CE only. Fresh LoRA, one optimizer, at most two updates; no validation, final set, EX or full training. No retries or driver changes."
+}

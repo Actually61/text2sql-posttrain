@@ -1,0 +1,31 @@
+{
+  "version": "cache_release_pilot_v1",
+  "seed": 42,
+  "previous_preflight": "reports/sft_resume_pilot_preflight.json",
+  "old_run": "outputs/runs/sft_resume_pilot_v1",
+  "run_dir": "outputs/runs/cache_release_pilot_v1",
+  "prepared_dir": "data/processed/cache_release_pilot_v1",
+  "preflight_report": "reports/cache_release_pilot_preflight.json",
+  "result_report": "reports/cache_release_pilot_result.json",
+  "selected_examples": 16,
+  "batch_size": 1,
+  "accumulation_steps": 8,
+  "maximum_updates": 2,
+  "minimum_free_mib": 6656,
+  "minimum_disk_gib": 2,
+  "allocated_limit_mib": 6144,
+  "reserved_limit_mib": 7168,
+  "limits": {
+    "total_soft_seconds": 240,
+    "total_hard_seconds": 300,
+    "micro_soft_seconds": 60,
+    "micro_hard_seconds": 90,
+    "shared_limit_mib": 512,
+    "shared_duration_seconds": 1,
+    "resource_grace_seconds": 5,
+    "sample_interval_seconds": 0.1,
+    "telemetry_stale_seconds": 2
+  },
+  "cpu_reports": ["reports/cache_release_core_cpu_checks.json", "reports/cache_release_watchdog_cpu_checks.json"],
+  "policy": "One fresh independent run, original first two groups in exact order; no restore, replay, retry, truncation, evaluation or full training. Release unused cache after every backward; preserve accumulated gradients and Adam."
+}

@@ -1,0 +1,11 @@
+dataset: Spider 1.0
+source_page: https://yale-lily.github.io/spider
+source_url: https://drive.google.com/file/d/1403EGqzIDoHMdQF4c9Bkyl7dZLZ5Wt6J/view
+google_drive_file_id: 1403EGqzIDoHMdQF4c9Bkyl7dZLZ5Wt6J
+archive_path: .cache/datasets/spider_data.zip
+archive_sha256: 00636695dabed6b5f4b8328a16b13e069a2f16591d5efcce57660669c85b121b
+raw_dir: data/raw/spider
+max_archive_bytes: 1073741824
+max_extracted_bytes: 10737418240
+license: CC BY-SA 4.0
+license_url: https://creativecommons.org/licenses/by-sa/4.0/

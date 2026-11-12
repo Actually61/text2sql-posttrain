@@ -1,0 +1,22 @@
+{
+  "version": "sft_round1_eval_v2",
+  "baseline_config": "configs/baseline_full.json",
+  "baseline_generation_report": "reports/baseline_full_generation.json",
+  "adapter_path": "outputs/runs/sft_round1_resource_v3/checkpoints/update_000796",
+  "training_report": "reports/sft_round1_resource_v3_result.json",
+  "run_dir": "outputs/preds/sft_round1_eval_v2",
+  "preflight_report": "reports/sft_round1_eval_v2_preflight.json",
+  "generation_report": "reports/sft_round1_eval_v2_generation.json",
+  "resource_readiness_report": "reports/sft_round1_eval_v2_start_resources.json",
+  "minimum_free_mib": 6656,
+  "start_headroom_mib": 128,
+  "start_resource_samples": 6,
+  "start_resource_interval_seconds": 2,
+  "start_resource_budget_seconds": 20,
+  "minimum_disk_gib": 8,
+  "allocated_limit_mib": 6144,
+  "reserved_limit_mib": 7168,
+  "worker_hard_seconds": 3900,
+  "load_budget_seconds": 120,
+  "scope": "Exactly 625 frozen internal-validation inputs, final 796-update adapter only; no training, no final set, no retry or checkpoint selection."
+}

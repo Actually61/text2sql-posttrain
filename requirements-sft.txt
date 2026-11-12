@@ -1,0 +1,3 @@
+# Historical environment supplement; see README for torch/CUDA constraints.
+-r requirements.lock.txt
+peft==0.21.2

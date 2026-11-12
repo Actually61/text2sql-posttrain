@@ -1,0 +1,30 @@
+{
+  "version": "final_decode_v4",
+  "run_root": "outputs/final_holdout_decode_v4",
+  "frozen_report": "reports/final_decode_v4_freeze.json",
+  "preflight_report": "reports/final_decode_v4_preflight.json",
+  "authorization_record": "reports/final_decode_authorization_v1.json",
+  "decoder_cpu_evidence": "outputs/checks/final_sql_decode_v1/result.json",
+  "worker_cpu_evidence": "outputs/checks/final_sql_decode_worker_v1/result.json",
+  "decoder_revision": "utf8_surrogateescape_text_only_v1",
+  "expected_examples": 1034,
+  "expected_databases": 20,
+  "scoring_budget_seconds": 300,
+  "generation_roots": {
+    "base": "outputs/final_holdout_v3/base",
+    "sft": "outputs/final_holdout_v4/sft"
+  },
+  "generation_configs": {
+    "base": "configs/final_holdout_resume_v3.json",
+    "sft": "configs/final_holdout_resume_v4.json"
+  },
+  "worker_source": "src/eval/spider_pair_worker_decode_v2.py",
+  "scorer_source": "src/eval/evaluate_final_decode_v4.py",
+  "original_evaluation_config": "configs/evaluation.json",
+  "preserved_failed_score_dir": "outputs/final_holdout_v3/scores_base",
+  "training": false,
+  "regenerate_predictions": false,
+  "automatic_retries": 0,
+  "reuse_old_scores": false,
+  "policy": "After explicit authorization and CPU decoder evidence, score both fixed 1034-prediction files afresh in new directories. Only SQLite TEXT result decoding changes from strict UTF-8 to reversible surrogateescape. Original comparator, queries, databases, values, DISTINCT, order rule, denominator and timeouts stay fixed; BLOB remains bytes. Preserve the failed strict scoring records. No model or prompt tuning."
+}

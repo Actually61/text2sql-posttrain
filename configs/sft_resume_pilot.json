@@ -1,0 +1,23 @@
+{
+  "version": "sft_resume_pilot_v1",
+  "mode": "bounded_resume_pilot",
+  "formal_config": "configs/sft_round1.json",
+  "formal_preflight": "reports/sft_round1_preflight.json",
+  "seed": 42,
+  "selected_examples": 32,
+  "batch_size": 1,
+  "accumulation_steps": 8,
+  "segment_ranges": [[0, 2], [2, 4]],
+  "global_update_budget": 4,
+  "minimum_free_mib": 6144,
+  "minimum_disk_gib": 2,
+  "total_worker_budget_seconds": 600,
+  "estimated_runtime_minutes": [2, 5],
+  "estimated_peak_allocated_gib": [5, 5.5],
+  "run_dir": "outputs/runs/sft_resume_pilot_v1",
+  "prepared_dir": "data/processed/spider_sft_resume_pilot_v1",
+  "preflight_report": "reports/sft_resume_pilot_preflight.json",
+  "result_report": "reports/sft_resume_pilot_result.json",
+  "cpu_reports": ["reports/sft_pilot_data_cpu_checks.json", "reports/sft_checkpoint_cpu_checks.json", "reports/sft_update_budget_cpu_checks.json"],
+  "policy": "One fresh run; two real processes, two updates each. Resume only the successful update-2 checkpoint; no replay, retries, full training, generation or evaluation."
+}

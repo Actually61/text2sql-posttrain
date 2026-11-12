@@ -1,0 +1,95 @@
+{
+  "version": "sft_round1_v1",
+  "status": "cpu_preflight_only",
+  "gpu_training_enabled": false,
+  "seed": 42,
+  "model": {
+    "inherit_loading_and_lora_from": "configs/qlora_smoke.json",
+    "start": "original frozen base plus fresh LoRA; never continue a smoke adapter",
+    "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+    "loss_implementation": "src/train/target_loss.py:target_position_loss",
+    "quantization": "NF4 double quant, BF16 compute, SDPA",
+    "gradient_checkpointing": true,
+    "use_reentrant": false,
+    "use_cache": false,
+    "lora_r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.0,
+    "expected_trainable_parameters": 9232384
+  },
+  "data": {
+    "manifest": "data/processed/spider_sft_tokens_v1/manifest.json",
+    "train": "data/processed/spider_sft_tokens_v1/train_tokens.jsonl",
+    "expected_examples": 6364,
+    "expected_databases": 126,
+    "max_sequence_length": 4096,
+    "truncate": false,
+    "drop_last": false,
+    "packing": false,
+    "padding": "right, to current microbatch length; batch1 has no padding",
+    "length_bucket_upper_bounds": [512, 1024, 2048, 4096],
+    "schedule": "shuffle within each bucket; form full groups; pool bucket leftovers; shuffle all full groups; append the final incomplete group"
+  },
+  "training": {
+    "epochs": 1,
+    "micro_batch_size": 1,
+    "gradient_accumulation_steps": 8,
+    "expected_updates": 796,
+    "expected_final_group_examples": 4,
+    "normalization": "sum of micro_mean_loss * micro_valid_targets / actual_group_valid_targets; no extra division by 8",
+    "optimizer": {"name": "AdamW", "lr": 0.0001, "betas": [0.9, 0.999], "eps": 1e-8, "weight_decay": 0.0, "foreach": false},
+    "max_gradient_norm": 1.0,
+    "clip_policy": "once after every microbatch in the group has completed backward, then one optimizer step",
+    "scheduler": {
+      "type": "explicit_update_index_linear_warmup_decay",
+      "warmup_updates": 24,
+      "total_updates": 796,
+      "indexing": "j is the 1-based optimizer update about to execute; set lr before optimizer.step",
+      "formula": "peak*j/24 for j<=24; peak*(796-j+1)/(796-24+1) for 24<j<=796; zero after completion",
+      "state": "completed_updates, next_group_index, next_update_lr, immutable schedule hash; never restart warmup on resume"
+    }
+  },
+  "checkpoint": {
+    "planned_run_dir": "outputs/runs/sft_round1_v1",
+    "save_after_updates": [200, 400, 600, 796],
+    "keep_all_four": true,
+    "boundary": "after successful complete-group optimizer step and next-lr advancement, then zero_grad; never midway through accumulation",
+    "contents": ["adapter weights and config", "optimizer state including moments and steps", "lr state and next_update_lr", "completed_updates and next_group_index", "epoch and frozen group schedule", "Python NumPy Torch CPU and CUDA RNG states", "model data prompt tokenizer config package and source hashes"],
+    "write_policy": "write to a new temporary checkpoint directory, read back and hash-check, then atomically rename and mark complete; preserve previous complete checkpoint",
+    "resume_order": "verify hashes; rebuild identical base and LoRA; restore adapter, optimizer and LR state/cursor; restore RNG last; continue saved schedule without reshuffling",
+    "interruption_policy": "stop on failure; incomplete/possibly partial group is not a committed checkpoint; explicit resume uses last complete checkpoint, recording replayed work",
+    "real_gpu_save_resume_validated": false
+  },
+  "validation": {
+    "split": "frozen 625-example internal validation; no gradients",
+    "baseline": "reuse existing baseline reports; do not regenerate the base",
+    "when": "once after epoch-end adapter at update 796; interim checkpoints are for recovery, not model selection",
+    "generation_config": "configs/baseline_full.json",
+    "scoring_config": "configs/evaluation.json",
+    "protocol": "same prompt/tokenizer/model version/NF4; batch1 greedy, one result per question, max_new_tokens256; frozen EX protocol",
+    "metrics": ["execution rate", "EX", "difficulty breakdown", "failure types", "runtime and GPU memory"],
+    "baseline_execution_rate": 0.7504,
+    "baseline_ex": 0.5952,
+    "final_set": "sealed; not read, trained on, tuned on or evaluated in this step"
+  },
+  "resources": {
+    "measured_long_sample_allocated_gib": 4.88830089569092,
+    "estimated_accumulation_allocated_gib": [5.0, 5.5],
+    "additional_live_gradient_mib": 35.21875,
+    "minimum_free_gpu_mib_before_future_start": 6144,
+    "desired_free_gpu_mib": 6656,
+    "disk_reserve_gib": 2,
+    "training_window_hours_estimate": [2, 4],
+    "validation_minutes_estimate": [20, 30],
+    "per_bucket_forward_backward_seconds_assumptions": [[0.5, 1.0], [1.0, 2.0], [2.0, 4.0], [5.5, 8.0]],
+    "estimate_limit": "scenario estimate, not measured formal throughput or guaranteed memory ceiling; both context and target length matter",
+    "calibration_before_full_run": "bounded real-trainer pilot across all length buckets with accumulation, checkpoint and resume; not authorized or executed in this CPU step",
+    "stops": ["OOM", "nonfinite loss gradient or adapter", "missing/duplicate scheduled data", "source or checkpoint integrity mismatch", "failed save or memory telemetry", "training window exceeded: finish current group if healthy, save a resumable checkpoint and stop; no silent extra epoch or retries"]
+  },
+  "artifacts": {
+    "cpu_equivalence_report": "reports/token_accumulation_cpu_checks.json",
+    "schedule": "data/processed/spider_sft_round1_plan_v1/epoch_0.json",
+    "preflight_report": "reports/sft_round1_preflight.json",
+    "tutorial": "reports/sft_round1_walkthrough.md"
+  }
+}

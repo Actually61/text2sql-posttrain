@@ -1,0 +1,29 @@
+{
+  "version": "qlora_single_batch_v2",
+  "bias_preparation": "Cast frozen Linear4bit biases to compute_dtype before hashing, requiring exact numerical preservation",
+  "seed": 42,
+  "source_indices": [0, 1],
+  "max_batch_length": 512,
+  "optimizer_steps": 1,
+  "model_dir": "models/qwen2.5-coder-1.5b-instruct",
+  "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+  "sft_manifest_sha256": "df1653d8f8122875175783a244a596d09bb820237ff8e4a6066375ef415393b7",
+  "quantization": {"load_in_4bit": true, "type": "nf4", "double_quant": true, "compute_dtype": "bfloat16"},
+  "attention_implementation": "sdpa",
+  "gradient_checkpointing": true,
+  "use_reentrant": false,
+  "use_cache": false,
+  "lora": {
+    "r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.0,
+    "bias": "none",
+    "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  },
+  "optimizer": {"name": "AdamW", "lr": 0.0001, "weight_decay": 0.0, "betas": [0.9, 0.999], "eps": 1e-8, "foreach": false},
+  "expected_trainable_parameters": 9232384,
+  "minimum_free_mib": 5500,
+  "estimated_process_peak_gib": [3, 5],
+  "estimated_runtime_minutes": [1, 5],
+  "scope": "One short training batch and one optimizer step; no generation, validation, final data, long examples or formal training. Save adapter only."
+}

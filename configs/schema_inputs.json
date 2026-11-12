@@ -1,0 +1,18 @@
+{
+  "version": "spider_inputs_v1",
+  "schema_format": "spider_structure_text_v1",
+  "schema_file": "data/raw/spider/tables.json",
+  "train_file": "data/processed/spider_gold_v1/train_clean.jsonl",
+  "validation_file": "data/processed/spider_v1/validation.jsonl",
+  "gold_manifest": "reports/spider_gold_manifest.json",
+  "split_manifest": "data/processed/spider_v1/split_manifest.json",
+  "model_config": "configs/model.yaml",
+  "prompt_config": "configs/prompt.yaml",
+  "output_dir": "data/processed/spider_inputs_v1",
+  "length_budgets": [1024, 1536, 2048, 3072, 4096, 8192],
+  "generation_reserve_tokens": 256,
+  "truncate": false,
+  "schema_selection": "all tables/columns in the sample database; independent of question and gold",
+  "validation_policy": "keep all 625 inputs; references stored separately; never train on validation",
+  "final_policy": "read shared schema metadata but select only train/validation databases; no final examples or final database serialization"
+}

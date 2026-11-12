@@ -1,0 +1,2 @@
+# Preserve the exact snapshot bytes; project protocols bind SHA-256 hashes.
+* -text

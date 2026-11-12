@@ -1,0 +1,90 @@
+{
+  "version": "sft_round2_formal_v1",
+  "seed": 42,
+  "run_dir": "outputs/runs/sft_round2_formal_v1",
+  "preflight_report": "reports/sft_round2_formal_v1_preflight.json",
+  "result_report": "reports/sft_round2_formal_v1_result.json",
+  "cpu_report": "reports/sft_round2_formal_cpu_v1_checks.json",
+  "selected_examples": 6364,
+  "batch_size": 1,
+  "accumulation_steps": 8,
+  "maximum_updates": 796,
+  "global_update_budget": 796,
+  "segment_ranges": [
+    [
+      0,
+      200
+    ],
+    [
+      200,
+      400
+    ],
+    [
+      400,
+      600
+    ],
+    [
+      600,
+      796
+    ]
+  ],
+  "minimum_free_mib": 6656,
+  "minimum_disk_gib": 8,
+  "allocated_limit_mib": 6144,
+  "reserved_limit_mib": 7168,
+  "total_gpu_window_seconds": 15660,
+  "cpu_check_budget_seconds": 120,
+  "limits": {
+    "budget_profile": "formal_sft",
+    "total_soft_seconds": 3600,
+    "total_hard_seconds": 3900,
+    "handshake_seconds": 3,
+    "cleanup_seconds": 2,
+    "expected_process_count": 1,
+    "child_self_seconds": 3904,
+    "case_seconds": 3906,
+    "micro_soft_seconds": 60,
+    "micro_hard_seconds": 90,
+    "shared_limit_mib": 512,
+    "shared_duration_seconds": 1,
+    "resource_grace_seconds": 5,
+    "sample_interval_seconds": 0.1,
+    "telemetry_stale_seconds": 2
+  },
+  "policy": "One newly authorized weighted 6364-example, 796-update round from the original frozen base and fresh LoRA. Only sample loss weights change versus round1; data/order/training recipe stay unchanged. Preserve every prior run, freeze before one CPU acceptance, then one four-segment GPU run. No retries, evaluation, truncation, dropping or final-set access.",
+  "mutex_wait_seconds": 1,
+  "reused_cpu_reports": [
+    "reports/sft_round2_weight_cpu_v1_checks.json",
+    "reports/sft_round2_pilot_cpu_v2_checks.json",
+    "reports/sft_clock_v2_cpu_checks.json"
+  ],
+  "gpu_training_enabled": false,
+  "evaluation_enabled": false,
+  "formal_config": "configs/sft_round2_weight_proposal_v1.json",
+  "train_path": "data/processed/spider_sft_tokens_v1/train_tokens.jsonl",
+  "schedule_path": "data/processed/spider_round2_weight_plan_v1/weighted_groups.json",
+  "expected_examples": 6364,
+  "expected_databases": 126,
+  "expected_tail_group_size": 4,
+  "save_after_updates": [
+    200,
+    400,
+    600,
+    796
+  ],
+  "successful_pilot_report": "reports/sft_round2_pilot_v2_result.json",
+  "launch_policy": "Explicit --run --confirm-formal-training required; configuration remains GPU-disabled by default. Never continue round1 or pilot adapters.",
+  "stop_policy": "At any soft time/resource request, stop at the next worker guard; do not finish an incomplete group or perform an additional update/save. Preserve existing complete checkpoints and the exact attempted/completed ledger. No automatic replay, rollback, retry or resume.",
+  "data_cpu_report": "reports/sft_round1_ready_cpu_checks.json",
+  "previous_failed_formal_run": "outputs/runs/sft_round1_ready_v1",
+  "previous_formal_attempted_updates": 142,
+  "previous_formal_completed_updates": 142,
+  "previous_zero_update_run": "outputs/runs/sft_round1_clock_v2",
+  "resource_readiness_report": "reports/sft_round2_formal_v1_start_resources.json",
+  "start_headroom_mib": 128,
+  "start_resource_samples": 6,
+  "start_resource_interval_seconds": 2,
+  "start_resource_budget_seconds": 20,
+  "weights_path": "data/processed/spider_round2_weight_plan_v1/train_loss_weights.jsonl",
+  "original_schedule_path": "data/processed/spider_sft_round1_plan_v1/epoch_0.json"
+}

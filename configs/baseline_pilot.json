@@ -1,0 +1,30 @@
+{
+  "version": "qwen25_coder_15b_nf4_pilot_v1",
+  "pilot_manifest": "data/processed/spider_baseline_pilot_v1/manifest.json",
+  "pilot_inputs": "data/processed/spider_baseline_pilot_v1/inputs.jsonl",
+  "model_config": "configs/model.yaml",
+  "seed": 42,
+  "expected_examples": 32,
+  "batch_size": 1,
+  "attention_implementation": "sdpa",
+  "quantization": {"type": "nf4", "double_quant": true, "compute_dtype": "bfloat16"},
+  "generation": {
+    "do_sample": false,
+    "num_beams": 1,
+    "num_return_sequences": 1,
+    "max_new_tokens": 256,
+    "max_time_seconds": 30.0,
+    "repetition_penalty": 1.0,
+    "use_cache": true,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 50
+  },
+  "max_input_tokens": 1024,
+  "generation_loop_budget_seconds": 600.0,
+  "gpu_sampling_interval_seconds": 0.5,
+  "retries_per_example": 0,
+  "warmup_generations": 0,
+  "sql_extraction": "strip outer whitespace and at most one complete Markdown code fence; no repair or semicolon splitting",
+  "scope": "exactly the frozen 32 internal-validation examples, no training or full evaluation"
+}

@@ -1,0 +1,53 @@
+{
+  "version": "sft_mutex_resume_v1",
+  "seed": 42,
+  "run_dir": "outputs/runs/sft_mutex_resume_v1",
+  "prepared_dir": "data/processed/spider_sft_resume_pilot_v1",
+  "preflight_report": "reports/sft_mutex_resume_preflight.json",
+  "result_report": "reports/sft_mutex_resume_result.json",
+  "cpu_report": "reports/sft_mutex_resume_cpu_checks.json",
+  "selected_examples": 32,
+  "batch_size": 1,
+  "accumulation_steps": 8,
+  "maximum_updates": 4,
+  "global_update_budget": 4,
+  "segment_ranges": [
+    [
+      0,
+      2
+    ],
+    [
+      2,
+      4
+    ]
+  ],
+  "minimum_free_mib": 6656,
+  "minimum_disk_gib": 2,
+  "allocated_limit_mib": 6144,
+  "reserved_limit_mib": 7168,
+  "total_gpu_window_seconds": 620,
+  "cpu_check_budget_seconds": 30,
+  "limits": {
+    "budget_profile": "bounded_sft",
+    "total_soft_seconds": 240,
+    "total_hard_seconds": 300,
+    "handshake_seconds": 3,
+    "cleanup_seconds": 2,
+    "expected_process_count": 1,
+    "child_self_seconds": 304,
+    "case_seconds": 306,
+    "micro_soft_seconds": 60,
+    "micro_hard_seconds": 90,
+    "shared_limit_mib": 512,
+    "shared_duration_seconds": 1,
+    "resource_grace_seconds": 5,
+    "sample_interval_seconds": 0.1,
+    "telemetry_stale_seconds": 2
+  },
+  "policy": "Single new run using verified named-mutex stage I/O; original 32 complete training examples and exact order; 2 updates, save and exit, new process restores and updates twice. No retry, replay, truncation, deletion, full training, evaluation or final-set access.",
+  "mutex_wait_seconds": 1,
+  "reused_cpu_reports": [
+    "reports/sft_cache_resume_cpu_checks.json",
+    "reports/stage_mutex_cpu_checks.json"
+  ]
+}

@@ -1,0 +1,11 @@
+raw_dir: data/raw/spider
+download_manifest: reports/spider_download_manifest.json
+train_file: train_spider.json
+final_file: dev.json
+schema_file: tables.json
+database_dir: database
+expected_train_examples: 7000
+expected_final_examples: 1034
+split_seed: 42
+validation_db_fraction: 0.1
+processed_dir: data/processed/spider_v1

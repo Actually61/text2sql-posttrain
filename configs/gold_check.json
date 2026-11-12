@@ -1,0 +1,11 @@
+{
+  "policy_version": "gold_audit_v1",
+  "initial_timeout_seconds": 2.0,
+  "retry_timeout_seconds": 10.0,
+  "hard_timeout_grace_seconds": 3.0,
+  "workers": 4,
+  "training_policy": "strict execution ok, exact triple dedup keep minimum source_index; quarantine all unresolved errors",
+  "validation_policy": "keep all 625 original rows; annotate failures, never silently filter denominator",
+  "decode_policy": "strict UTF-8; replacement retry is diagnostic only",
+  "final_policy": "do not read or execute final or official test data"
+}

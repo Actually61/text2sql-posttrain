@@ -1,0 +1,23 @@
+{
+  "version": "qlora_stability_32x32_v1",
+  "seed": 42,
+  "selection": "Sort eligible training records by source_index, random.Random(42).sample 32, then sort selected IDs; freeze before model load",
+  "subset_count": 32,
+  "max_sequence_length": 512,
+  "batch_size": 2,
+  "max_steps": 32,
+  "training_epochs": 2,
+  "training_loop_budget_seconds": 600,
+  "minimum_free_mib": 5120,
+  "estimated_process_peak_gib": [3.5, 4.5],
+  "estimated_runtime_minutes": [2, 5],
+  "source_smoke_config": "configs/qlora_smoke.json",
+  "sft_manifest": "data/processed/spider_sft_tokens_v1/manifest.json",
+  "sft_manifest_sha256": "df1653d8f8122875175783a244a596d09bb820237ff8e4a6066375ef415393b7",
+  "subset_dir": "data/processed/spider_stability_32_v1",
+  "run_dir": "outputs/runs/qlora_stability_32x32_v1",
+  "loss_comparison": "model.eval + no_grad, same 32 training samples/order/pairing, sum(batch_mean_loss * shifted_valid_target_tokens) / sum(valid_target_tokens)",
+  "gradient_accumulation_steps": 1,
+  "learning_rate_schedule": "constant; reuse smoke lr=1e-4, no scheduler",
+  "scope": "New LoRA from frozen base, at most32 updates. No truncation of formal data, no long-example training, no validation/final examples or EX evaluation."
+}

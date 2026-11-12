@@ -1,0 +1,20 @@
+seed: 42
+model_config: configs/model.yaml
+prompt_config: configs/prompt.yaml
+suite_config: configs/smoke_cases.yaml
+attention_implementation: sdpa
+quantization:
+  type: nf4
+  compute_dtype: bfloat16
+  double_quant: true
+generation:
+  do_sample: false
+  num_beams: 1
+  max_new_tokens: 128
+  max_time_seconds: 120
+  repetition_penalty: 1.0
+max_input_tokens: 2048
+generation_budget_seconds: 600
+evaluation:
+  process_timeout_seconds: 5
+  max_result_rows: 200

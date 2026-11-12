@@ -1,0 +1,463 @@
+suite_id: phase0_synthetic_20_v1
+# 纯手工合成练习。每题用相同 schema、不同数据的 base/edge 两个实例验证。
+# 模型输入只能使用 schema 和 question，不能包含 rows、gold_sql 或 expected_rows。
+databases:
+  school:
+    schema: |-
+      CREATE TABLE students (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          major TEXT,
+          score INTEGER
+      );
+      CREATE TABLE courses (
+          id INTEGER PRIMARY KEY,
+          title TEXT NOT NULL
+      );
+      CREATE TABLE enrollments (
+          student_id INTEGER NOT NULL REFERENCES students(id),
+          course_id INTEGER NOT NULL REFERENCES courses(id),
+          grade INTEGER,
+          PRIMARY KEY (student_id, course_id)
+      );
+    fixtures:
+      - id: base
+        rows:
+          students:
+            - [1, Alice, CS, 95]
+            - [2, Bob, Math, 92]
+            - [3, Carol, CS, 88]
+            - [4, David, CS, 97]
+            - [5, Eve, CS, 90]
+            - [6, Frank, null, null]
+            - [7, Grace, Math, 90]
+            - [8, Eve, CS, 90]
+          courses:
+            - [10, Databases]
+            - [20, Algorithms]
+            - [30, Networks]
+          enrollments:
+            - [1, 10, 95]
+            - [1, 20, 90]
+            - [2, 10, 80]
+            - [3, 20, 88]
+            - [4, 10, 97]
+            - [5, 30, null]
+            - [8, 10, 90]
+      - id: edge
+        rows:
+          students:
+            - [1, Ivy, CS, 90]
+            - [2, Jules, CS, 89]
+            - [3, Kai, Math, 100]
+            - [4, Lina, CS, 100]
+            - [5, Mona, CS, null]
+            - [6, Ivy, CS, 90]
+            - [7, Omar, Math, 0]
+            - [8, Pia, null, null]
+          courses:
+            - [10, Databases]
+            - [20, Algorithms]
+            - [30, Networks]
+          enrollments:
+            - [1, 10, 90]
+            - [1, 20, 91]
+            - [2, 10, 89]
+            - [3, 20, 100]
+            - [4, 10, 100]
+            - [6, 30, 90]
+            - [8, 10, null]
+
+  shop:
+    schema: |-
+      CREATE TABLE customers (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          city TEXT
+      );
+      CREATE TABLE orders (
+          id INTEGER PRIMARY KEY,
+          customer_id INTEGER NOT NULL REFERENCES customers(id),
+          status TEXT NOT NULL,
+          total INTEGER
+      );
+    fixtures:
+      - id: base
+        rows:
+          customers:
+            - [1, Ava, Beijing]
+            - [2, Ben, Shanghai]
+            - [3, Cleo, Beijing]
+            - [4, Dylan, Shenzhen]
+            - [5, Emma, null]
+          orders:
+            - [101, 1, paid, 100]
+            - [102, 1, paid, 50]
+            - [103, 2, pending, 200]
+            - [104, 3, paid, 100]
+            - [105, 3, cancelled, 30]
+            - [106, 5, paid, 0]
+            - [107, 2, paid, null]
+      - id: edge
+        rows:
+          customers:
+            - [1, Aria, Beijing]
+            - [2, Boris, Shanghai]
+            - [3, Cora, Beijing]
+            - [4, Diego, Shenzhen]
+            - [5, Esme, null]
+          orders:
+            - [201, 1, paid, 150]
+            - [202, 2, paid, 75]
+            - [203, 2, paid, 75]
+            - [204, 3, pending, 300]
+            - [205, 4, cancelled, 100]
+            - [206, 5, paid, 0]
+            - [207, 5, paid, null]
+
+  company:
+    schema: |-
+      CREATE TABLE departments (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL
+      );
+      CREATE TABLE employees (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          department_id INTEGER REFERENCES departments(id),
+          salary INTEGER,
+          manager_id INTEGER REFERENCES employees(id)
+      );
+    fixtures:
+      - id: base
+        rows:
+          departments:
+            - [1, Engineering]
+            - [2, Sales]
+            - [3, HR]
+            - [4, Legal]
+          employees:
+            - [1, Ada, 1, 10000, null]
+            - [2, Bo, 1, 8000, 1]
+            - [3, Cy, 1, 8000, 1]
+            - [4, Dee, 2, 9000, null]
+            - [5, Eli, 2, 6000, 4]
+            - [6, Fay, 3, null, null]
+            - [7, Gus, null, 7000, null]
+      - id: edge
+        rows:
+          departments:
+            - [1, Engineering]
+            - [2, Sales]
+            - [3, HR]
+            - [4, Legal]
+          employees:
+            - [1, Hana, 1, 9000, null]
+            - [2, Ivan, 1, 9000, 1]
+            - [3, Jia, 2, 12000, null]
+            - [4, Kian, 2, null, 3]
+            - [5, Luz, 3, 5000, null]
+            - [6, Milo, null, 4000, null]
+            - [7, Nia, 1, 10000, 1]
+            - [8, Oli, 4, null, null]
+
+cases:
+  - id: p0_01
+    database_id: school
+    category: select_duplicates
+    question: >-
+      List every student's name. Keep duplicate names, with one result row for
+      each student. No ordering is required.
+    gold_sql: SELECT name FROM students;
+    ordered: false
+    expected_rows:
+      base: [[Alice], [Bob], [Carol], [David], [Eve], [Frank], [Grace], [Eve]]
+      edge: [[Ivy], [Jules], [Kai], [Lina], [Mona], [Ivy], [Omar], [Pia]]
+    explanation_zh: 选择姓名列；同名学生仍各占一行。无排序要求时忽略行序，但不能用集合丢掉重复行。
+
+  - id: p0_02
+    database_id: school
+    category: where_order
+    question: >-
+      List the names of students whose major is 'CS' and score is at least 90.
+      Order by score descending, then student id ascending to break ties.
+    gold_sql: >-
+      SELECT name FROM students WHERE major = 'CS' AND score >= 90
+      ORDER BY score DESC, id ASC;
+    ordered: true
+    expected_rows:
+      base: [[David], [Alice], [Eve], [Eve]]
+      edge: [[Lina], [Ivy], [Ivy]]
+    explanation_zh: AND 要同时满足两个条件；至少 90 包含 90。降序成绩并列时按 id 升序，NULL 成绩不会满足比较条件。
+
+  - id: p0_03
+    database_id: school
+    category: order_limit
+    question: >-
+      Return the names and scores of the three students with the highest known
+      scores, in that column order. Exclude unknown scores. Order by score
+      descending, then student id ascending to break ties.
+    gold_sql: >-
+      SELECT name, score FROM students WHERE score IS NOT NULL
+      ORDER BY score DESC, id ASC LIMIT 3;
+    ordered: true
+    expected_rows:
+      base: [[David, 97], [Alice, 95], [Bob, 92]]
+      edge: [[Kai, 100], [Lina, 100], [Ivy, 90]]
+    explanation_zh: 先过滤未知成绩，再排序，最后 LIMIT 取前三行；同分时必须用题目指定的 id 决定截断位置。
+
+  - id: p0_04
+    database_id: school
+    category: distinct
+    question: >-
+      List the distinct non-NULL majors, ordered alphabetically by major ascending.
+    gold_sql: SELECT DISTINCT major FROM students WHERE major IS NOT NULL ORDER BY major ASC;
+    ordered: true
+    expected_rows:
+      base: [[CS], [Math]]
+      edge: [[CS], [Math]]
+    explanation_zh: DISTINCT 按专业去重；IS NOT NULL 排除未知专业，而不是把 NULL 当作普通字符串。
+
+  - id: p0_05
+    database_id: school
+    category: count_null
+    question: >-
+      Return one row with the total number of students first and the number of
+      students with a non-NULL score second. A score of zero is a known score.
+    gold_sql: SELECT COUNT(*), COUNT(score) FROM students;
+    ordered: false
+    expected_rows:
+      base: [[8, 7]]
+      edge: [[8, 6]]
+    explanation_zh: COUNT(*) 数所有行，COUNT(score) 只数 score 非 NULL 的行；0 仍应计数。
+
+  - id: p0_06
+    database_id: school
+    category: is_null
+    question: >-
+      List the names of students with an unknown (NULL) score, ordered by student id ascending.
+    gold_sql: SELECT name FROM students WHERE score IS NULL ORDER BY id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Frank]]
+      edge: [[Mona], [Pia]]
+    explanation_zh: 判断缺失值使用 IS NULL；score = NULL 不会得到预期结果，score = 0 也不代表缺失。
+
+  - id: p0_07
+    database_id: school
+    category: three_table_join
+    question: >-
+      List the names of students enrolled in the course whose title is 'Databases'.
+      Include enrolled students even if their course grade is NULL.
+      Order by student id ascending.
+    gold_sql: >-
+      SELECT s.name FROM students AS s
+      JOIN enrollments AS e ON e.student_id = s.id
+      JOIN courses AS c ON c.id = e.course_id
+      WHERE c.title = 'Databases' ORDER BY s.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Alice], [Bob], [David], [Eve]]
+      edge: [[Ivy], [Jules], [Lina], [Pia]]
+    explanation_zh: 选课关系在 enrollments 中，通过两次 JOIN 找到课程对应的学生；是否选课与成绩是否已录入是两件事。
+
+  - id: p0_08
+    database_id: shop
+    category: filter_projection
+    question: >-
+      List the order id and total, in that column order, for orders whose status
+      is 'paid'. Include zero and NULL totals. Order by order id ascending.
+    gold_sql: SELECT id, total FROM orders WHERE status = 'paid' ORDER BY id ASC;
+    ordered: true
+    expected_rows:
+      base: [[101, 100], [102, 50], [104, 100], [106, 0], [107, null]]
+      edge: [[201, 150], [202, 75], [203, 75], [206, 0], [207, null]]
+    explanation_zh: 题目仅按状态过滤，不能额外排除零金额或未知金额；返回的两列及顺序也属于答案要求。
+
+  - id: p0_09
+    database_id: shop
+    category: sum
+    question: >-
+      Return the sum of known totals for orders whose status is 'paid'.
+      Include zero totals and ignore NULL totals.
+    gold_sql: SELECT SUM(total) FROM orders WHERE status = 'paid';
+    ordered: false
+    expected_rows:
+      base: [[250]]
+      edge: [[300]]
+    explanation_zh: SUM 对筛选后的非 NULL 金额求和；不能把 pending 或 cancelled 订单计入。
+
+  - id: p0_10
+    database_id: shop
+    category: average
+    question: >-
+      Return the average of known totals for orders whose status is 'paid'.
+      Include zero totals in the average and ignore NULL totals.
+    gold_sql: SELECT AVG(total) FROM orders WHERE status = 'paid';
+    ordered: false
+    expected_rows:
+      base: [[62.5]]
+      edge: [[75.0]]
+    explanation_zh: AVG 的分母是已知金额的订单数，零金额参与平均，NULL 不参与；不要用 COUNT(*) 作分母。
+
+  - id: p0_11
+    database_id: shop
+    category: group_count
+    question: >-
+      For every order status present in the orders table, return the status and
+      the number of orders, in that column order. Count orders even when total
+      is NULL. Order by status alphabetically ascending.
+    gold_sql: SELECT status, COUNT(*) FROM orders GROUP BY status ORDER BY status ASC;
+    ordered: true
+    expected_rows:
+      base: [[cancelled, 1], [paid, 5], [pending, 1]]
+      edge: [[cancelled, 1], [paid, 5], [pending, 1]]
+    explanation_zh: GROUP BY 按状态分组，再对每组计数；COUNT(total) 会漏掉未知金额的订单。
+
+  - id: p0_12
+    database_id: shop
+    category: having_count
+    question: >-
+      Return the customer id and total number of orders for each customer who
+      has at least two orders, in that column order. Count all statuses and
+      include orders with NULL totals. Order by customer id ascending.
+    gold_sql: >-
+      SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id
+      HAVING COUNT(*) >= 2 ORDER BY customer_id ASC;
+    ordered: true
+    expected_rows:
+      base: [[1, 2], [2, 2], [3, 2]]
+      edge: [[2, 2], [5, 2]]
+    explanation_zh: HAVING 对分组后的订单数筛选；至少两单包含两单，且题目没有限定 paid。
+
+  - id: p0_13
+    database_id: shop
+    category: left_join_count
+    question: >-
+      For every customer, return customer id, customer name, and the number of
+      orders, in that column order. Include customers with zero orders and
+      count orders of all statuses. Order by customer id ascending.
+    gold_sql: >-
+      SELECT c.id, c.name, COUNT(o.id) FROM customers AS c
+      LEFT JOIN orders AS o ON o.customer_id = c.id
+      GROUP BY c.id, c.name ORDER BY c.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[1, Ava, 2], [2, Ben, 2], [3, Cleo, 2], [4, Dylan, 0], [5, Emma, 1]]
+      edge: [[1, Aria, 1], [2, Boris, 2], [3, Cora, 1], [4, Diego, 1], [5, Esme, 2]]
+    explanation_zh: LEFT JOIN 保留没有订单的客户；COUNT(o.id) 得到 0，COUNT(*) 会把补出的空关联行误计为 1。
+
+  - id: p0_14
+    database_id: shop
+    category: not_exists
+    question: >-
+      List the names of customers who have no orders with status 'paid'. A paid
+      order still counts as paid if its total is zero or NULL. Include customers
+      who have no orders at all. Order by customer id ascending.
+    gold_sql: >-
+      SELECT c.name FROM customers AS c WHERE NOT EXISTS (
+        SELECT 1 FROM orders AS o WHERE o.customer_id = c.id AND o.status = 'paid'
+      ) ORDER BY c.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Dylan]]
+      edge: [[Cora], [Diego]]
+    explanation_zh: NOT EXISTS 检查是否不存在符合条件的关联行；没有 paid 订单不等于有一条非 paid 订单。
+
+  - id: p0_15
+    database_id: company
+    category: filter_empty_result
+    question: >-
+      List the names of employees whose salary is strictly greater than 11000,
+      ordered by employee id ascending.
+    gold_sql: SELECT name FROM employees WHERE salary > 11000 ORDER BY id ASC;
+    ordered: true
+    expected_rows:
+      base: []
+      edge: [[Jia]]
+    explanation_zh: 空结果可能是正确答案；第二份数据提供非空结果，避免只凭两条查询恰好都为空就认定正确。
+
+  - id: p0_16
+    database_id: company
+    category: left_join_average
+    question: >-
+      For every department, return its name and the average of its employees'
+      known salaries rounded to two decimal places, in that column order.
+      Include departments with no employees and departments whose employees
+      all have NULL salaries; return NULL for their average.
+      Order by department id ascending.
+    gold_sql: >-
+      SELECT d.name, ROUND(AVG(e.salary), 2) FROM departments AS d
+      LEFT JOIN employees AS e ON e.department_id = d.id
+      GROUP BY d.id, d.name ORDER BY d.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Engineering, 8666.67], [Sales, 7500.0], [HR, null], [Legal, null]]
+      edge: [[Engineering, 9333.33], [Sales, 12000.0], [HR, 5000.0], [Legal, null]]
+    explanation_zh: 外连接保留全部部门，AVG 忽略 NULL，ROUND 控制两位小数；不存在已知工资时平均值仍为 NULL，不是 0。
+
+  - id: p0_17
+    database_id: company
+    category: having_sum
+    question: >-
+      Return department id and the sum of known employee salaries, in that
+      column order, for departments whose known salaries sum to at least 15000.
+      Exclude employees with no department. Order by department id ascending.
+    gold_sql: >-
+      SELECT department_id, SUM(salary) FROM employees WHERE department_id IS NOT NULL
+      GROUP BY department_id HAVING SUM(salary) >= 15000 ORDER BY department_id ASC;
+    ordered: true
+    expected_rows:
+      base: [[1, 26000], [2, 15000]]
+      edge: [[1, 28000]]
+    explanation_zh: 先排除没有部门的员工，再按部门求和；HAVING 的阈值包含恰好 15000 的部门。
+
+  - id: p0_18
+    database_id: company
+    category: self_join
+    question: >-
+      For each employee who has a manager, return the employee's name followed
+      by the manager's name. Order by employee id ascending.
+    gold_sql: >-
+      SELECT e.name, m.name FROM employees AS e
+      JOIN employees AS m ON e.manager_id = m.id ORDER BY e.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Bo, Ada], [Cy, Ada], [Eli, Dee]]
+      edge: [[Ivan, Hana], [Kian, Jia], [Nia, Hana]]
+    explanation_zh: 同一张员工表用 e、m 两个别名分别表示员工和经理，通过 manager_id 连接到经理的 id。
+
+  - id: p0_19
+    database_id: company
+    category: correlated_subquery
+    question: >-
+      Among employees assigned to a department, list the names of those whose
+      salary is strictly above the average known salary in their own department.
+      Ignore NULL salaries when computing each average. Order by employee id ascending.
+    gold_sql: >-
+      SELECT e.name FROM employees AS e WHERE e.department_id IS NOT NULL
+      AND e.salary > (
+        SELECT AVG(e2.salary) FROM employees AS e2 WHERE e2.department_id = e.department_id
+      ) ORDER BY e.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[Ada], [Dee]]
+      edge: [[Nia]]
+    explanation_zh: 子查询使用外层员工的部门来计算该部门平均值；不能用全公司的平均工资代替。
+
+  - id: p0_20
+    database_id: company
+    category: exists_null
+    question: >-
+      List the names of departments that have at least one employee whose
+      salary is NULL. Departments with no employees do not qualify.
+      Return each department once, ordered by department id ascending.
+    gold_sql: >-
+      SELECT d.name FROM departments AS d WHERE EXISTS (
+        SELECT 1 FROM employees AS e WHERE e.department_id = d.id AND e.salary IS NULL
+      ) ORDER BY d.id ASC;
+    ordered: true
+    expected_rows:
+      base: [[HR]]
+      edge: [[Sales], [Legal]]
+    explanation_zh: EXISTS 要求确实有一名未知工资的员工；空部门和有员工但工资未知的部门必须区分。

@@ -1,0 +1,16 @@
+{
+  "version": "qlora_long_probe_v2",
+  "tiers": ["1024", "2048", "3761"],
+  "target_lengths": [1024, 2048, 3761],
+  "batch_size": 1,
+  "max_updates_per_tier": 1,
+  "seed": 42,
+  "minimum_free_mib": 6144,
+  "process_timeout_seconds": 300,
+  "selection": "Nearest complete training sequence by (absolute length distance, source_index); last tier is the longest sequence, ties use smallest source_index",
+  "source_config": "configs/qlora_smoke.json",
+  "subset_dir": "data/processed/spider_long_probe_v2",
+  "run_root": "outputs/runs/qlora_long_probe_v2",
+  "stop_policy": "Any OOM, nonfinite value, integrity failure, process error or timeout stops all later tiers. No automatic retry or parameter change.",
+  "scope": "Independent fresh LoRA per tier; full training examples only; no truncation, full training, generation, EX, validation or final data."
+}
