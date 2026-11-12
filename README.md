@@ -15,6 +15,34 @@
 
 推荐从 [schema 序列化](src/data/schema_serialization.py)、[训练特征](src/data/sft_features.py)、[目标位置损失](src/train/target_loss.py)、[梯度累积](src/train/token_accumulation.py)、[首轮训练 worker](src/train/sft_round1_resource_v3_worker.py) 与 [最终 SQLite 执行器](src/eval/spider_pair_worker_decode_v2.py) 开始。程序和测试中的小型固定样例用于说明行为，不是完整训练/评测数据集。
 
+## 核心代码走读
+
+以“学生表里有多少名学生？”为例。假设表结构是 `students(id, name)`，参考答案是 `SELECT COUNT(*) FROM students`。这是用来读代码的例子，不是实验中的真实预测。
+
+### 1. 输入整道题，只监督 SQL 答案
+
+[训练样本编码，第 100–133 行](https://github.com/Actually61/text2sql-posttrain/blob/8079d64a3428a60183fcaf1e33c2b70c0c44898a/src/data/sft_features.py#L100-L133) 分别编码「问题和表结构」构成的提示词，以及「提示词 + 参考 SQL」构成的完整对话。两段编码的前缀必须一致，才能用 `prompt_length` 找准答案的起点。核心是两行：
+
+```python
+labels = [IGNORE_INDEX] * len(input_ids)
+labels[prompt_length:eos_position + 1] = input_ids[prompt_length:eos_position + 1]
+```
+
+`input_ids` 始终包含整道题。第一行把所有标签设为 `-100`（不计损失），第二行只填回 SQL 的 token 和结束标记 EOS。**不计损失不等于看不见**：模型仍能看见 `students` 的表结构；训练考的是它能否据此写出 SQL，并在答案结束时停下来。
+
+### 2. 一条条算梯度，一组才更新一次
+
+首轮 QLoRA 冻结 4-bit 基座，只更新 LoRA 参数。为了在 8 GB 显存上保留完整样本，每次前向只放一条；通常积累 8 条后更新一次，最后一组是 4 条。
+
+- **算梯度：**[累积函数，第 24–49 行](https://github.com/Actually61/text2sql-posttrain/blob/8079d64a3428a60183fcaf1e33c2b70c0c44898a/src/train/cache_release_core.py#L24-L49)。每条的 `loss` 是其有效答案 token 的平均损失。代码用 `weight = count / total_targets`（本条有效答案 token 数 ÷ 本组总数），再调用 `(loss * weight).backward()`。这样每个答案 token 等权；直接把每条的平均损失除以 8，会让短答案里的单个 token 占更大权重。
+- **改参数：**[首轮训练入口，第 311–326 行](https://github.com/Actually61/text2sql-posttrain/blob/8079d64a3428a60183fcaf1e33c2b70c0c44898a/src/train/sft_round1_resource_v3_worker.py#L311-L326)。整组反向传播完成后，程序检查并裁剪梯度。直到 `optimizer.step()` 才用累计梯度更新 LoRA 参数；前面的 `backward()` 不改参数。
+
+### 3. SQL 能运行，不代表答对了
+
+[SQLite 评分，第 187–207 行](https://github.com/Actually61/text2sql-posttrain/blob/8079d64a3428a60183fcaf1e33c2b70c0c44898a/src/eval/spider_pair_worker_decode_v2.py#L187-L207) 把参考 SQL 和预测 SQL 放到同一数据库分别执行。第 191 行判断预测是否成功执行；两条都成功后，第 199 行才用 `result_eq` 比较查询结果，而不是逐字比较 SQL。
+
+假设表里有两名学生 Alice 和 Bob。参考 SQL 返回数字 `2`；如果模型写成 `SELECT name FROM students`，它也能运行，但返回的是两行姓名。这道题就是**可执行，但 EX = 0**。反过来，即使两条 SQL 在这份数据库上结果相同，也不能证明它们在所有可能的数据上都等价。
+
 ## 环境和外部材料
 
 - 已记录实验环境：Windows、Python 3.11.9、PyTorch 2.11.0+cu128、Transformers 5.20.2、PEFT 0.21.2、bitsandbytes 0.50.2、8 GB 显存。保留原始 `requirements.lock.txt`；该锁**没有**后来加入的 PEFT。`requirements-sft.txt` 明确补充这个版本，不代表已经在干净环境验证所有安装步骤。CUDA 构建来源、驱动和操作系统应另行适配。
