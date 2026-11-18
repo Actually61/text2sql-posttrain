@@ -1,12 +1,12 @@
-# 面试代码精读：从一条 Spider 样本到 SQL 执行评分
+# 代码精读：从一条 Spider 样本到 SQL 执行评分
 
-这不是重新介绍项目亮点，而是一份**打开源码后能一步步对照阅读**的导读。每一步说明：先打开哪个文件、输入从哪里来、关键语句做什么、输出交给谁，以及面试时怎样解释。
+这不是重新介绍项目亮点，而是一份**打开源码后能一步步对照阅读**的导读。每一步说明：先打开哪个文件、输入从哪里来、关键语句做什么、输出交给谁。
 
 本文对应源码版本 [`112b5ce`](https://github.com/Actually61/text2sql-posttrain/tree/112b5ce087947820181be80573eeaea0530cb4e8)。源码链接固定到这个提交，避免后续改 README 导致行号漂移；本次只补文档，没有修改训练和评分代码，也没有重新运行实验。
 
 ## 0. 怎么使用这份导读
 
-### 先读主线，不必把所有脚本背下来
+### 先读主线
 
 | 阅读顺序 | 你要弄明白什么 | 跳转 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 | 5 | 新进程如何接着上一次训练 | [首轮训练的第6节](#training) |
 | 6 | 模型怎样生成 SQL、如何判断正确 | [推理与评分](#inference) |
 | 7 | 第二轮到底改了什么、为什么最终选首轮 | [第二轮补充](#round2) |
-| 8 | 面试官打开代码时，按什么顺序讲 | [现场演示路线](#interview) |
+| 8 | 代码阅读顺序 | [代码阅读路线](#interview) |
 
 **实际操作：**左边打开本导读，右边打开对应源码链接；每次只看文中指定的几十行，不要从一个几百行的文件第一行硬读到最后。在 VS Code 中可用 `Ctrl+P` 找文件、`Ctrl+G` 跳到行号，或直接点击本文的 GitHub 行链接。
 
@@ -104,7 +104,7 @@ key = (row["db_id"], row["question"], row["query"])
 
 已保存记录为 `6375 − 8 条重复 − 3 条隔离 = 6364`；验证集保留全部 625 题，不通过删难题改变分母。`keep.append(row)` 保留原始记录字段，不悄悄改 SQL 文本。发布后存于 `data/processed/spider_gold_v1/train_clean.jsonl`，JSONL 是一行一个 JSON 对象；这是外部运行产物，公开仓库没有随附整份数据。
 
-**现场一句话：**“这里先按数据库划分，再检查参考 SQL，并按数据库、问题和 SQL 的精确三元组去重。保证同一数据库不会同时进入训练和验证，异常样本有记录，不是靠删验证错题提高成绩。”
+“这里先按数据库划分，再检查参考 SQL，并按数据库、问题和 SQL 的精确三元组去重。保证同一数据库不会同时进入训练和验证，异常样本有记录，不是靠删验证错题提高成绩。”
 
 **自查：按数据库隔离能保证模型从没见过 Spider 吗？** 不能，它保证本项目微调数据的库隔离，不能排除开源基座预训练接触过公开数据。
 
@@ -139,7 +139,7 @@ Table "head":
 
 注意这是给模型看的结构说明，不是可直接执行的建表 SQL；`number/text` 是 Spider 元数据标签，也不冒充精确的 SQLite DDL 类型。
 
-**现场一句话：**“我把表、列、类型和主外键按固定格式转换成文字，保留原始名字和索引关系。输入包含该数据库完整 schema，不用参考 SQL 偷选相关表。”
+“我把表、列、类型和主外键按固定格式转换成文字，保留原始名字和索引关系。输入包含该数据库完整 schema，不用参考 SQL 偷选相关表。”
 
 ### 3. 提示词、参考答案为什么分开保存
 
@@ -166,7 +166,7 @@ return [{"role": "system", "content": prompt["system"]},
 
 “冻结提示词和 tokenizer”的落点在 [load_sources:103–122](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/data/prepare_model_inputs.py#L103-L122)：这一段核对模型revision和分词器来源，并记录提示词等文件的哈希。后续 [prepare_sft_data.py:128–138](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/data/prepare_sft_data.py#L128-L138) 才与已冻结的prompt、tokenizer文件和依赖版本逐项比对。这里的冻结是实验版本固定，不是说tokenizer需要参加反向传播后再冻结。
 
-**现场一句话：**“训练需要问题和参考答案，但推理只能输入问题和 schema。所以我把生成输入和评分参考分文件保存，保证评分答案不会被拼进模型输入。”
+“训练需要问题和参考答案，但推理只能输入问题和 schema。所以我把生成输入和评分参考分文件保存，保证评分答案不会被拼进模型输入。”
 
 ### 4. 一条消息怎么变成 input_ids、attention_mask、labels
 
@@ -231,7 +231,7 @@ labels[prompt_length:eos_position + 1] = input_ids[prompt_length:eos_position + 
 
 这里 `labels` 尚未移动。因果语言模型用前一位置的输出预测下一个 token，所以首个 SQL 标签在286，但对应预测来自位置285。实际自定义 loss 在 `target_loss.py` 里做一次对齐，不能在数据准备时再提前移一次。
 
-**现场一句话：**“input_ids保留完整上下文，labels只保留SQL和EOS，其余用-100。这样模型看着问题和表结构学习答案，不把复述prompt当训练目标。”
+“input_ids保留完整上下文，labels只保留SQL和EOS，其余用-100。这样模型看着问题和表结构学习答案，不把复述prompt当训练目标。”
 
 ### 5. collate 是什么：把列表变成可训练 batch
 
@@ -301,7 +301,7 @@ by_id = {row['source_index']: row for row in original}
 
 **为什么是796次？** `6364 = 795 × 8 + 4`，最后4条也组成一组更新，既不丢弃，也不补成重复样本。分组生成逻辑在 [sft_round1_plan.py 第 65–96 行](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_round1_plan.py#L65-L96)：按完整长度进入512/1024/2048/4096四个桶，桶内打乱、组成完整组，余数合并后再分组，最后追加不足8条的尾组。batch1本身没有padding，分桶不是“把每条补到桶上限”，也不是截断。
 
-**这段可以怎么讲：**“训练样本和更新顺序在CPU阶段就冻结了。worker按source_index取完整样本，每条只用一次，最后不足8条的组也正常参与更新。”
+“训练样本和更新顺序在CPU阶段就冻结了。worker按source_index取完整样本，每条只用一次，最后不足8条的组也正常参与更新。”
 
 ### 2. 基座、LoRA、AdamW 是如何接起来的
 
@@ -330,7 +330,7 @@ optimizer = JournaledAdamW(list(named.values()), ledger_path=ledger_path,
 
 优化器类在 [sft_update_budget.py 第 22–51 行](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_update_budget.py#L22-L51)：它继承 `torch.optim.AdamW`。项目额外记录“尝试更新数/完成更新数”，真正的 AdamW 更新仍是第48行 `super().step(closure)`。
 
-**这段可以怎么讲：**“Transformers负责加载基座，bitsandbytes负责量化，PEFT负责挂LoRA。我的训练入口把A/B参数交给PyTorch AdamW，并额外检查更新次数和参数确实变化，不是从零实现AdamW。”
+“Transformers负责加载基座，bitsandbytes负责量化，PEFT负责挂LoRA。我的训练入口把A/B参数交给PyTorch AdamW，并额外检查更新次数和参数确实变化，不是从零实现AdamW。”
 
 ### 3. 一组8条，怎样变成8次前向/反向和1次参数更新
 
@@ -384,7 +384,7 @@ for index, (batch, count) in enumerate(zip(batches, counts)):
 
 `loss.detach().item()` 仅用于记录一个Python浮点数，不参与求导。真正的 `.backward()` 必须用原始、仍连接计算图的 `loss`，不能用日志数值。
 
-**这段可以怎么讲：**“我一次只把一条完整样本放进显存。每条loss按它占整组有效答案token的比例反向，8条梯度累计完成后才更新一次，这样与整组token平均的目标一致。”
+“我一次只把一条完整样本放进显存。每条loss按它占整组有效答案token的比例反向，8条梯度累计完成后才更新一次，这样与整组token平均的目标一致。”
 
 ### 4. 前向loss到底怎么计算：先对齐，再只算需要的位置
 
@@ -424,7 +424,7 @@ loss = F.cross_entropy(logits.float().reshape(-1, vocab_size), targets.reshape(-
 
 **为什么训练输入里有参考SQL，不算直接偷看答案？** 训练采用teacher forcing：预测某个答案token时，模型能看问题、schema和它前面的正确token。模型内部的因果注意力限制它不能看未来token；外部 `attention_mask` 的0/1主要标记padding，不等于因果遮挡本身。推理时没有参考SQL，只能把自己刚生成的token接回去继续生成。
 
-**这段可以怎么讲：**“输入保持完整，训练目标是用前面的上下文预测下一个SQL token。我显式对齐一次标签，只对有效答案的预测位置计算词表logits和交叉熵，减少显存，但不改变监督目标。”
+“输入保持完整，训练目标是用前面的上下文预测下一个SQL token。我显式对齐一次标签，只对有效答案的预测位置计算词表logits和交叉熵，减少显存，但不改变监督目标。”
 
 ### 5. 哪里真正更新参数，怎么确认更新成功
 
@@ -440,7 +440,7 @@ LoRA的B从0开始，所以第一步A的梯度可能为0；代码要求的是**�
 
 每条反向后的 `empty_cache()` 在 [worker 第 281–305 行](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_round1_resource_v3_worker.py#L281-L305)。项目检查了调用前后累计梯度和Adam状态的存储/版本没有改变。它只释放未使用的CUDA缓存，不清梯度、不清动量，也不能释放正在使用的模型张量；不要把它说成通用训练加速技巧。
 
-**这段可以怎么讲：**“backward只积累梯度，step才改参数。我不仅记录loss，还检查梯度、Adam步数和adapter更新前后的差异，防止出现看起来在训练、实际上参数没动的情况。”
+“backward只积累梯度，step才改参数。我不仅记录loss，还检查梯度、Adam步数和adapter更新前后的差异，防止出现看起来在训练、实际上参数没动的情况。”
 
 ### 6. 为什么保存adapter还不够：正式训练怎样分段恢复
 
@@ -466,7 +466,7 @@ worker每段都先构建相同基座和新的LoRA结构；第1段使用新初始
 
 此实现没有单独的 `scheduler.pt`：学习率是根据已完成更新数和冻结公式计算的，所以保存游标、下一步LR和调度配置哈希即可。`rng.pt`使用了pickle形式的状态，代码只用于项目自己生成的可信检查点，哈希一致不等于任意外部文件都安全。
 
-**这段可以怎么讲：**“推理需要原基座和adapter，但不需要优化器状态；继续训练还要恢复Adam状态、学习率进度、数据游标和随机状态。我在完整累积组结束后保存，读回验收，再让下一进程从同一位置继续。”
+“推理需要原基座和adapter，但不需要优化器状态；继续训练还要恢复Adam状态、学习率进度、数据游标和随机状态。我在完整累积组结束后保存，读回验收，再让下一进程从同一位置继续。”
 
 <a id="inference"></a>
 ## 三、推理与评分：生成SQL和给SQL判分是两件事
@@ -481,7 +481,7 @@ worker每段都先构建相同基座和新的LoRA结构；第1段使用新初始
 | 两模型最终统一评分 | `src/eval/evaluate_final_decode_v4.py` | 读取已有预测，CPU 执行 SQL；不加载模型、不重新生成 |
 | 一道题真正的 SQLite 执行与比较 | `src/eval/spider_pair_worker_decode_v2.py` | 父评分程序调用它；它接收一题的参考 SQL、预测 SQL 和数据库路径 |
 
-这些是已记录实验的代码阅读入口，**不是下载仓库即可直接运行的命令清单**。它们依赖未发布的数据、模型、adapter、冻结哈希、CPU 预检和运行账本。面试现场按下面顺序打开代码，不要启动历史入口。
+这些是已记录实验的代码阅读入口，**不是下载仓库即可直接运行的命令清单**。它们依赖未发布的数据、模型、adapter、冻结哈希、CPU 预检和运行账本。按下面顺序打开代码，不要启动历史入口。
 
 ### 第一步：模型推理时到底拿到了什么？
 
@@ -505,7 +505,7 @@ encoded = tokenizer.apply_chat_template(row['messages'], tokenize=True, add_gene
 
 154–157 行检查字段白名单和消息角色，防止把参考答案混入推理；160–161 行只检查长度，超过预设上限立即报错，**不是静默截断**。本函数会核对包括参考文件在内的文件哈希，但不解析参考 SQL 作为模型输入。
 
-**这一段能对面试官说：**“推理只读问题和 schema；聊天模板把它们编码成 `[1, L]` 的输入，标准答案留在评分阶段，不能进入模型的生成输入。”
+“推理只读问题和 schema；聊天模板把它们编码成 `[1, L]` 的输入，标准答案留在评分阶段，不能进入模型的生成输入。”
 
 ### 第二步：训练好的 adapter 是怎么用来生成的？
 
@@ -546,7 +546,7 @@ text = tokenizer.decode(new_ids, skip_special_tokens=True)
 
 生成参数见 [`configs/baseline_full.json:13–24`](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/configs/baseline_full.json#L13-L24)：`do_sample=False`、`num_beams=1`、`num_return_sequences=1` 表示每题一次贪心生成；`max_new_tokens=256` 限制**新增答案**长度，不是问题加答案总长度。`temperature/top_p/top_k` 虽保留在配置中，但不用于这里的非采样贪心选择。`use_cache=True` 使用题内 KV Cache；不把不同题的上下文拼起来。
 
-**这一段能对面试官说：**“评测时先加载同一基座，再挂载保存的首轮 adapter，关闭训练与梯度记录。每题贪心生成一次，只截取新生成的 token，解码后保存成 SQL。”
+“评测时先加载同一基座，再挂载保存的首轮 adapter，关闭训练与梯度记录。每题贪心生成一次，只截取新生成的 token，解码后保存成 SQL。”
 
 ### 第三步：模型输出是怎么保存的，会不会偷偷修答案？
 
@@ -615,7 +615,7 @@ matched = official_exec_eval.result_eq(gold_rows, predicted_rows, response["orde
 - `valid = sum(r['prediction_executable'] is True for r in results)`，可执行率 = `valid / count`。
 - 分母是整个固定评测集合，不是只留下能运行的 SQL。预测 SQL 错误仍占分母；数据库、标准答案或评分基础设施错误则导致正式验收停止，不能悄悄把这种错误算成模型失误后宣称评测完成。
 
-**这一段能对面试官说：**“先分别执行参考和预测 SQL，再比较返回结果。能执行只说明语法和表列引用等能通过，不代表答对；EX 才检查查询结果，但单份数据库上的相同结果也不能证明所有数据情况下的语义等价。”
+“先分别执行参考和预测 SQL，再比较返回结果。能执行只说明语法和表列引用等能通过，不代表答对；EX 才检查查询结果，但单份数据库上的相同结果也不能证明所有数据情况下的语义等价。”
 
 ### 第五步：评分安全和最终修复应该怎么解释？
 
@@ -636,7 +636,7 @@ matched = official_exec_eval.result_eq(gold_rows, predicted_rows, response["orde
 3. 317–320 行：基座错、SFT 对计 `improved`；基座对、SFT 错计 `regressed`。强制检查 `改善数 - 退化数 = SFT 对题数 - 基座对题数`，避免配错样本后只看百分比。
 4. 输出总体、各难度、失败类型及改善/退化题号到 `comparison.json`。它是分析产物，不是给模型下一轮自动调参的输入。
 
-**面试时按代码讲：**“我不是只比较两个平均准确率，而是先确认同一题、同一协议，再逐题统计改善和退化。这样既能看到收益，也能看到微调损害了哪些原本会做的题。”
+“我不是只比较两个平均准确率，而是先确认同一题、同一协议，再逐题统计改善和退化。这样既能看到收益，也能看到微调损害了哪些原本会做的题。”
 
 <a id="round2"></a>
 ## 四、第二轮只补看这一处：样本权重如何进入loss
@@ -653,18 +653,18 @@ matched = official_exec_eval.result_eq(gold_rows, predicted_rows, response["orde
 
 内部625题上，首轮EX为73.12%，第二轮72.96%；逐题是16条改善、17条退化。**这次实验没有带来总体提升，所以保留负结果，最终留出对照选择首轮。**不能将一次实验解释成“加权永远无效”，也不能编出没有测过的提升。
 
-**现场讲法：**“第二轮改变的是训练样本对目标函数的相对贡献，而不是模型结构。加权后部分题改善、部分题退化，总体没有收益，所以最终保留首轮。”
+“第二轮改变的是训练样本对目标函数的相对贡献，而不是模型结构。加权后部分题改善、部分题退化，总体没有收益，所以最终保留首轮。”
 
 <a id="interview"></a>
-## 五、面试官要看代码，按这条路线操作
+## 五、代码阅读路线
 
-### 先用20秒讲清整体，再打开文件
+
 
 > “项目基于开源Qwen模型和Transformers、PEFT实现。我先把问题和完整schema转成输入，构造只监督SQL及结束标记的标签；训练时一次处理一条，按整组答案token数累积梯度，再用AdamW更新LoRA；评测时只给问题和schema，生成一次SQL后执行，并和参考查询结果比较。”
 
-### 有5–10分钟时，打开这五处
+### 打开这五处
 
-| 顺序 | 点击这里 | 用手指着代码说明什么 | 常见追问与短答 |
+| 顺序 | 点击这里 | 代码要点 | 说明 |
 | --- | --- | --- | --- |
 | 1 | [sft_features.py:100–133](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/data/sft_features.py#L100-L133) | 指出prompt边界、EOS位置和两行labels赋值 | prompt的label为-100，但mask为1，因此看得见、不计损失 |
 | 2 | [worker:213–220](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_round1_resource_v3_worker.py#L213-L220) → [cache_release_core.py:25–48](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/cache_release_core.py#L25-L48) | LoRA参数给优化器；每条答案token数决定反向系数 | `backward()`累计梯度，不更新权重；不能把日志浮点数拿去求导 |
@@ -672,7 +672,7 @@ matched = official_exec_eval.result_eq(gold_rows, predicted_rows, response["orde
 | 4 | [final_holdout_resume_v4.py:278–291](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/infer/final_holdout_resume_v4.py#L278-L291) | generate输入只有问题和schema；按L切出新增token | 训练有gold用于监督，推理没有gold；每题单次贪心，不挑最好结果 |
 | 5 | [spider_pair_worker_decode_v2.py:187–207](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/eval/spider_pair_worker_decode_v2.py#L187-L207) | 分别执行gold/predicted，再用result_eq比结果 | 可执行不等于答对，单份数据库EX也不等于证明语义恒等 |
 
-被追问恢复时，再打开 [sft_checkpoint.py:188–224](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_checkpoint.py#L188-L224)，说清“推理需要原基座和adapter；继续训练还需Adam状态、学习率游标、数据顺序和RNG”。不必先讲Windows进程监督的所有修复历史。
+打开 [sft_checkpoint.py:188–224](https://github.com/Actually61/text2sql-posttrain/blob/112b5ce087947820181be80573eeaea0530cb4e8/src/train/sft_checkpoint.py#L188-L224)：“推理需要原基座和adapter；继续训练还需Adam状态、学习率游标、数据顺序和RNG”。
 
 ### 读完后的六个检查点（附答案）
 
@@ -685,8 +685,8 @@ matched = official_exec_eval.result_eq(gold_rows, predicted_rows, response["orde
 
 ### 暂时不用优先读的内容
 
-- `src/diagnostics/`、Windows Job、PID握手、遥测与互斥锁：属于可靠运行和失败追踪，算法主线读懂后再按追问补读。
+- `src/diagnostics/`、Windows Job、PID握手、遥测与互斥锁：属于可靠运行和失败追踪，算法主线读懂后再补读。
 - `reports/`、`outputs/`中的少量历史Python脚本：不是默认训练入口，不要看到相似文件名就切换实现。
-- 最终评测不同resume版本：用于保留当时失败和修复记录；了解历史边界即可，不需要为了面试重放运行。
+- 最终评测不同resume版本：用于保留当时失败和修复记录；了解历史边界即可，不需要重放运行。
 
-**最后把三句话说清楚即可：数据怎么变成监督目标；梯度怎么变成LoRA参数更新；预测怎么变成可信的评测结果。** 每句话都能指到真实代码，比背下所有脚本名称更重要。
+**数据怎么变成监督目标；梯度怎么变成LoRA参数更新；预测怎么变成可信的评测结果。**
